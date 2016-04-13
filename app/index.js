@@ -2,7 +2,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as csv from 'fast-csv';
-import csvWriter from 'csv-write-stream';
 import recursiveReadSync from 'recursive-readdir-sync';
 import * as babylon from 'babylon';
 import traverse from 'babel-traverse';
@@ -23,7 +22,7 @@ export default class App {
   async main() {
     await this.parseCsv();
     this.parseFolder();
-    this.generateCsv();
+    await this.generateCsv();
     this.generateJs();
   }
 
@@ -129,12 +128,18 @@ export default class App {
   generateCsv() {
     const fullPath = path.resolve(this.csvFileName);
     console.log(`Generating CSV "${fullPath}"`);
-    const writer = csvWriter({ sendHeaders: false });
-    writer.pipe(fs.createWriteStream(fullPath));
+    const csvStream = csv.createWriteStream({ headers: false });
+    csvStream.pipe(fs.createWriteStream(fullPath));
     for (const value of this.viewSids.values()) {
-      writer.write(value);
+      csvStream.write(value);
     }
-    writer.end();
+    csvStream.end();
+
+    return new Promise((resolve) => {
+      csvStream.on('finish', () => {
+        return resolve();
+      });
+    });
   }
 
   generateJs() {
