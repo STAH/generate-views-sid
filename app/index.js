@@ -1,5 +1,7 @@
 
 import * as fs from 'fs';
+import csv from 'csv-parser';
+import csvWriter from 'csv-write-stream';
 import recursiveReadSync from 'recursive-readdir-sync';
 
 export default class App {
@@ -7,6 +9,8 @@ export default class App {
     this.folder = folder;
     this.csvFileName = csvFileName;
     this.jsFileName = jsFileName;
+
+    this.viewSids = new Map();
   }
 
   main() {
@@ -18,6 +22,11 @@ export default class App {
 
   parseCsv() {
     console.log(`Parsing CSV "${this.csvFileName}"`);
+    fs.createReadStream(this.csvFileName)
+      .pipe(csv(['id', 'filename', 'title', 'sid']))
+      .on('data', (data) => {
+        this.viewSids.set(data.filename, { id: data.id, filename: data.filename, title: data.title, sid: data.sid });
+      });
   }
 
   parseFolder() {
@@ -44,6 +53,12 @@ export default class App {
 
   generateCsv() {
     console.log(`Generating CSV "${this.csvFileName}"`);
+    const writer = csvWriter({ sendHeaders: false });
+    writer.pipe(fs.createWriteStream(this.csvFileName));
+    for (const value of this.viewSids.values()) {
+      writer.write(value);
+    }
+    writer.end();
   }
 
   generateJs() {
