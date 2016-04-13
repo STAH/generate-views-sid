@@ -3,6 +3,11 @@ import * as fs from 'fs';
 import csv from 'csv-parser';
 import csvWriter from 'csv-write-stream';
 import recursiveReadSync from 'recursive-readdir-sync';
+import * as babylon from 'babylon';
+import traverse from 'babel-traverse';
+import * as t from 'babel-types';
+
+import baseViews from './baseViews';
 
 export default class App {
   constructor(folder, csvFileName, jsFileName) {
@@ -46,9 +51,43 @@ export default class App {
     }
   }
 
+  isMatchedCallee(callee, match) {
+    if (t.isMemberExpression(callee)
+        && t.isCallExpression(callee.object)) {
+      return this.isMatchedCallee(callee.object.callee, match);
+    }
+    const calleeString = this.file.substring(callee.start, callee.end);
+    return calleeString === match;
+  }
+
+  isExtendsBaseView(calee) {
+    const length = baseViews.length;
+    for (let i = 0; i < length; i++) {
+      if (this.isMatchedCallee(calee, baseViews[i])) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   parseFile(filename) {
-    const file = fs.readFileSync(filename, 'utf8');
     console.log(`Parsing "${filename}"`);
+
+    this.file = fs.readFileSync(filename, 'utf8');
+    const ast = babylon.parse(this.file);
+
+    traverse(ast, {
+      AssignmentExpression: (nodePath) => {
+        const node = nodePath.node;
+        if (t.isCallExpression(node.right)
+            && this.isExtendsBaseView(node.right.callee)) {
+          const name = this.file.substring(node.left.start, node.left.end);
+          const parts = name.split('.');
+          console.log('Found: ' + parts[parts.length - 1]);
+        }
+      }
+    });
   }
 
   generateCsv() {
