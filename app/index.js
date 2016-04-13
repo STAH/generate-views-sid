@@ -6,6 +6,7 @@ import recursiveReadSync from 'recursive-readdir-sync';
 import * as babylon from 'babylon';
 import traverse from 'babel-traverse';
 import * as t from 'babel-types';
+import * as uuid from 'node-uuid';
 
 import baseViews from './baseViews';
 
@@ -28,9 +29,9 @@ export default class App {
   parseCsv() {
     console.log(`Parsing CSV "${this.csvFileName}"`);
     fs.createReadStream(this.csvFileName)
-      .pipe(csv(['id', 'filename', 'title', 'sid']))
+      .pipe(csv(['id', 'className', 'title', 'sid']))
       .on('data', (data) => {
-        this.viewSids.set(data.filename, { id: data.id, filename: data.filename, title: data.title, sid: data.sid });
+        this.viewSids.set(data.className, { id: data.id, className: data.className, title: data.title, sid: data.sid });
       });
   }
 
@@ -80,11 +81,26 @@ export default class App {
     traverse(ast, {
       AssignmentExpression: (nodePath) => {
         const node = nodePath.node;
+        const parentNode = nodePath.parentPath.node;
         if (t.isCallExpression(node.right)
             && this.isExtendsBaseView(node.right.callee)) {
           const name = this.file.substring(node.left.start, node.left.end);
           const parts = name.split('.');
-          console.log('Found: ' + parts[parts.length - 1]);
+          const shortName = parts[parts.length - 1];
+
+          const commentsLength = parentNode.leadingComments.length;
+          let title = shortName;
+          if (commentsLength > 0) {
+            for (let i = 0; i < commentsLength; i++) {
+              const comment = parentNode.leadingComments[i];
+              if (comment.type === 'CommentLine'
+                  && comment.value.startsWith('@@')) {
+                title = comment.value.slice(2).trim();
+              }
+            }
+          }
+          this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: uuid.v4() });
+          console.log(`Found: ${shortName}`);
         }
       }
     });
