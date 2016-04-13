@@ -1,6 +1,7 @@
 
 import * as fs from 'fs';
-import csv from 'csv-parser';
+import * as path from 'path';
+import * as csv from 'fast-csv';
 import csvWriter from 'csv-write-stream';
 import recursiveReadSync from 'recursive-readdir-sync';
 import * as babylon from 'babylon';
@@ -19,26 +20,35 @@ export default class App {
     this.viewSids = new Map();
   }
 
-  main() {
-    this.parseCsv();
+  async main() {
+    await this.parseCsv();
     this.parseFolder();
     this.generateCsv();
     this.generateJs();
   }
 
   parseCsv() {
-    console.log(`Parsing CSV "${this.csvFileName}"`);
-    fs.createReadStream(this.csvFileName)
-      .pipe(csv(['id', 'className', 'title', 'sid']))
-      .on('data', (data) => {
+    const fullPath = path.resolve(this.csvFileName);
+    console.log(`Parsing CSV "${fullPath}"`);
+    const stream = fs.createReadStream(fullPath);
+    const csvStream = csv.fromStream(stream, {
+      headers: ['id', 'className', 'title', 'sid']
+    });
+    return new Promise((resolve) => {
+      csvStream.on('data', (data) => {
         this.viewSids.set(data.className, { id: data.id, className: data.className, title: data.title, sid: data.sid });
       });
+      csvStream.on('end', () => {
+        return resolve();
+      });
+    });
   }
 
   parseFolder() {
     let files = [];
+    const fullPath = path.resolve(this.folder);
     try {
-      files = recursiveReadSync(this.folder);
+      files = recursiveReadSync(fullPath);
     } catch (err) {
       if (err.errno === 34) {
         console.log('Path does not exist');
@@ -117,9 +127,10 @@ export default class App {
   }
 
   generateCsv() {
-    console.log(`Generating CSV "${this.csvFileName}"`);
+    const fullPath = path.resolve(this.csvFileName);
+    console.log(`Generating CSV "${fullPath}"`);
     const writer = csvWriter({ sendHeaders: false });
-    writer.pipe(fs.createWriteStream(this.csvFileName));
+    writer.pipe(fs.createWriteStream(fullPath));
     for (const value of this.viewSids.values()) {
       writer.write(value);
     }

@@ -45,8 +45,8 @@
     "babel-traverse": "^6.7.0",
     "babel-types": "^6.7.0",
     "babylon": "^6.7.0",
-    "csv-parser": "^1.9.3",
     "csv-write-stream": "^1.0.0",
+    "fast-csv": "^1.1.0",
     "node-uuid": "^1.4.7",
     "recursive-readdir-sync": "^1.0.6"
   }
