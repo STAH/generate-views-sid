@@ -99,8 +99,18 @@ export default class App {
               }
             }
           }
-          this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: uuid.v4() });
+
           console.log(`Found: ${shortName}`);
+
+          if (this.viewSids.has(shortName)) {
+            console.log('Already exists. Update title...');
+            const existingView = this.viewSids.get(shortName);
+            // Update title
+            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: existingView.sid });
+          } else {
+            console.log('Adding new...');
+            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: uuid.v4() });
+          }
         }
       }
     });
