@@ -2,11 +2,11 @@
 
 import App from '../app'
 
-const filename = process.argv[2];
-if (!filename) {
-  console.error('no filename specified');
+const folder = process.argv[2];
+if (!folder) {
+  console.error('no folder specified');
   process.exit(0);
 }
 
-const app = new App(filename);
+const app = new App(folder);
 app.generate();
