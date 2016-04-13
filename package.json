@@ -47,6 +47,7 @@
     "babylon": "^6.7.0",
     "csv-parser": "^1.9.3",
     "csv-write-stream": "^1.0.0",
+    "guid": "0.0.12",
     "recursive-readdir-sync": "^1.0.6"
   }
 }
