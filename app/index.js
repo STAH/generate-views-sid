@@ -7,6 +7,7 @@ import * as babylon from 'babylon';
 import traverse from 'babel-traverse';
 import * as t from 'babel-types';
 import * as uuid from 'node-uuid';
+import * as changeCase from 'change-case';
 
 import baseViews from './baseViews';
 
@@ -143,6 +144,13 @@ export default class App {
   }
 
   generateJs() {
-    console.log(`Generating JS "${this.jsFileName}"`);
+    const fullPath = path.resolve(this.jsFileName);
+    console.log(`Generating JS "${fullPath}"`);
+
+    let code = "//\n// This file was generated. Don't edit it!\n//\n";
+    for (const view of this.viewSids.values()) {
+      code += `var ${changeCase.constantCase(view.className)}_ID = '${view.sid}';\n`;
+    }
+    fs.writeFileSync(fullPath, code);
   }
 }
