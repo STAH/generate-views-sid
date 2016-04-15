@@ -33,11 +33,19 @@ export default class App {
     console.log(`Parsing CSV "${fullPath}"`);
     const stream = fs.createReadStream(fullPath);
     const csvStream = csv.fromStream(stream, {
-      headers: ['id', 'className', 'title', 'sid']
+      headers: ['id', 'className', 'title', 'sid', 'category', 'orderCategory', 'orderInterCategory']
     });
     return new Promise((resolve) => {
       csvStream.on('data', (data) => {
-        this.originalViewSids.set(data.className, { id: data.id, className: data.className, title: data.title, sid: data.sid });
+        this.originalViewSids.set(data.className, { 
+          id: data.id,
+          className: data.className,
+          title: data.title,
+          sid: data.sid,
+          category: data.category,
+          orderCategory: data.orderCategory,
+          orderInterCategory: data.orderInterCategory,
+        });
       });
       csvStream.on('end', () => {
         return resolve();
@@ -101,12 +109,25 @@ export default class App {
 
           const commentsLength = parentNode.leadingComments.length;
           let title = undefined;
+          let category = '';
+          let orderCategory = undefined;
+          let orderInterCategory = undefined;
           if (commentsLength > 0) {
             for (let i = 0; i < commentsLength; i++) {
               const comment = parentNode.leadingComments[i];
-              if (comment.type === 'CommentLine'
-                  && comment.value.startsWith(' @@sid ')) {
-                title = comment.value.slice(' @@sid '.length).trim();
+              if (comment.type === 'CommentLine') {
+                if (comment.value.startsWith(' @@sid ')) {
+                  title = comment.value.slice(' @@sid '.length).trim();
+                }
+                if (comment.value.startsWith(' @@category ')) {
+                  category = comment.value.slice(' @@category '.length).trim();
+                }
+                if (comment.value.startsWith(' @@orderCategory ')) {
+                  orderCategory = comment.value.slice(' @@orderCategory '.length).trim();
+                }
+                if (comment.value.startsWith(' @@orderInterCategory ')) {
+                  orderInterCategory = comment.value.slice(' @@orderInterCategory '.length).trim();
+                }
               }
             }
           }
@@ -121,10 +142,10 @@ export default class App {
             console.log('Already exists. Update title...');
             const existingView = this.originalViewSids.get(shortName);
             // Update title
-            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: existingView.sid });
+            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: existingView.sid, category: category, orderCategory: orderCategory, orderInterCategory: orderInterCategory});
           } else {
             console.log('Adding new...');
-            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: uuid.v4() });
+            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: uuid.v4(), category: category, orderCategory: orderCategory, orderInterCategory: orderInterCategory });
           }
         }
       }
@@ -151,11 +172,13 @@ export default class App {
   generateJs() {
     const fullPath = path.resolve(this.jsFileName);
     console.log(`Generating JS "${fullPath}"`);
-	  let code = "//\r\n// This file was generated. Don't edit it!\r\n//\r\n\/\* global App \*\/\r\n\r\n(function () {\r\n\tApp.Constant.ViewsSids = (function () {\r\n\t\tfunction ViewsSids() { }\r\n";
+	  let code = "//\n// This file was generated. Don't edit it!\n//\n\/";
+	  code += "\* global App \*\/\n\n";
 	  for (const view of this.viewSids.values()) {
-		  code += "\t\t" + `ViewsSids.${changeCase.constantCase(view.className)}_ID = '${view.sid}';\n`;
+		  code += `app.viewSids.${changeCase.constantCase(view.className)}_ID = '${view.sid}';\n`;
+		  code += `app.viewSids.${changeCase.constantCase(view.className)}_TITLE = '${view.title}';\n\n`;
 	  }
-	  code += "\r\n\t\treturn ViewsSids;\r\n\t})();\r\n}).call(this);";
+	  code.t
     fs.writeFileSync(fullPath, code);
   }
 }
