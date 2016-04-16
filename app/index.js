@@ -37,14 +37,14 @@ export default class App {
     });
     return new Promise((resolve) => {
       csvStream.on('data', (data) => {
-        this.originalViewSids.set(data.className, { 
+        this.originalViewSids.set(data.className, {
           id: data.id,
           className: data.className,
           title: data.title,
           sid: data.sid,
           category: data.category,
           orderCategory: data.orderCategory,
-          orderInterCategory: data.orderInterCategory,
+          orderInterCategory: data.orderInterCategory
         });
       });
       csvStream.on('end', () => {
@@ -142,10 +142,26 @@ export default class App {
             console.log('Already exists. Update title...');
             const existingView = this.originalViewSids.get(shortName);
             // Update title
-            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: existingView.sid, category: category, orderCategory: orderCategory, orderInterCategory: orderInterCategory});
+            this.viewSids.set(shortName, {
+              id: '',
+              className: shortName,
+              title: title,
+              sid: existingView.sid,
+              category: category,
+              orderCategory: orderCategory,
+              orderInterCategory: orderInterCategory
+            });
           } else {
             console.log('Adding new...');
-            this.viewSids.set(shortName, { id: '', className: shortName, title: title, sid: uuid.v4(), category: category, orderCategory: orderCategory, orderInterCategory: orderInterCategory });
+            this.viewSids.set(shortName, {
+              id: '',
+              className: shortName,
+              title: title,
+              sid: uuid.v4(),
+              category: category,
+              orderCategory: orderCategory,
+              orderInterCategory: orderInterCategory
+            });
           }
         }
       }
@@ -172,13 +188,17 @@ export default class App {
   generateJs() {
     const fullPath = path.resolve(this.jsFileName);
     console.log(`Generating JS "${fullPath}"`);
-	  let code = "//\n// This file was generated. Don't edit it!\n//\n\/";
-	  code += "\* global App \*\/\n\n";
-	  for (const view of this.viewSids.values()) {
-		  code += `app.viewSids.${changeCase.constantCase(view.className)}_ID = '${view.sid}';\n`;
-		  code += `app.viewSids.${changeCase.constantCase(view.className)}_TITLE = '${view.title}';\n\n`;
-	  }
-	  code.t
+    console.log(`Generating JS "${fullPath}"`);
+    let code = `//
+  // This file was generated. Don't edit it!
+  //
+  /* global app */
+
+  `;
+    for (const view of this.viewSids.values()) {
+      code += `app.viewSids.${changeCase.constantCase(view.className)}_ID = '${view.sid}';\n`;
+      code += `app.viewSids.${changeCase.constantCase(view.className)}_TITLE = '${view.title}';\n\n`;
+    }
     fs.writeFileSync(fullPath, code);
   }
 }
