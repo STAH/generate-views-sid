@@ -1,6 +1,6 @@
 #!/usr/bin/env babel-node
 
-import App from '../app';
+import App from '../lib';
 
 const folder = process.argv[2];
 if (!folder) {
