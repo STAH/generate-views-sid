@@ -1,6 +1,7 @@
 #!/usr/bin/env babel-node
 
 import App from '../lib';
+import baseViews from '../lib/baseViews';
 
 const folder = process.argv[2];
 if (!folder) {
@@ -20,5 +21,5 @@ if (!jsFileName) {
   process.exit(0);
 }
 
-const app = new App(folder, csvFileName, jsFileName);
+const app = new App(folder, csvFileName, jsFileName, baseViews);
 app.main();
